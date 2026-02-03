@@ -1,10 +1,15 @@
+import secrets
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegistrationSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from django.contrib.auth.models import User
+
+from jwt_auth_app.api.scripts import sendMail
+from .serializers import RegistrationSerializer
 
 class RegistrationView(APIView):
     """API view for user registration."""
@@ -20,6 +25,7 @@ class RegistrationView(APIView):
             data = {
                 'deatil': 'User created successfully!'
             }
+            sendMail(saved_account.email, secrets.token_urlsafe(16))
             return Response(data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
