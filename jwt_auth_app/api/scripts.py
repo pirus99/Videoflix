@@ -5,9 +5,6 @@ from django.core.mail import send_mail
 from django.core.cache import cache
 
 def sendMail(userEmail, token):
-    from django.utils.http import urlsafe_base64_encode
-    from django.utils.encoding import force_bytes
-
     user = User.objects.get(email=userEmail)
     activation_key = str(uuid.uuid4())[:32]
     data = {'uid': user.pk, 'token': token}
