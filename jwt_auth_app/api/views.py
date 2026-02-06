@@ -1,4 +1,4 @@
-import secrets, json
+import secrets, json, os
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
@@ -8,8 +8,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from django.core.cache import cache
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
 
-from jwt_auth_app.api.scripts import sendMail
+from jwt_auth_app.api.scripts import sendActivationEmail, sendPasswordResetEmail
 from .serializers import RegistrationSerializer
 
 class RegistrationView(APIView):
@@ -26,7 +27,7 @@ class RegistrationView(APIView):
             data = {
                 'deatil': 'User created successfully!'
             }
-            sendMail(saved_account.email, secrets.token_urlsafe(16))
+            sendActivationEmail(saved_account.email, secrets.token_urlsafe(16))
             return Response(data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -74,7 +75,10 @@ class LoginView(TokenObtainPairView):
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs): 
-            request.data['username'] = request.data.get('email')          
+            if request.data.get('email'):
+                request.data['username'] = request.data.get('email')
+            else:
+                return Response({'detail': 'Email is required for login.'}, status=status.HTTP_400_BAD_REQUEST)       
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             user = getattr(serializer, 'user', serializer.validated_data.get('user'))
@@ -134,3 +138,47 @@ class ActivateAccountView(APIView):
             return Response({'detail': 'Account activated successfully!'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'detail': 'User does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+class PasswordResetRequestView(APIView):
+    """API view to obtain password reset token via email."""
+    
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            sendPasswordResetEmail(email)
+            return Response({'detail': 'Password reset link sent to email.'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'detail': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+class PasswordResetConfirmView(APIView):
+    """API view to confirm password reset with token and set new password."""
+    
+    permission_classes = [AllowAny]
+
+    def post(self, request, reset_token):
+        cached_user_id = cache.get(f'password_reset_{reset_token}')
+        if not cached_user_id:
+            return Response({'detail': 'Reset token is invalid or has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+        if not new_password or not confirm_password:
+            return Response({'detail': 'New password and confirm password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return Response({'detail': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(pk=cached_user_id)
+            user.set_password(new_password)
+            user.save()
+            cache.delete(f'password_reset_{reset_token}')
+            return Response({'detail': 'Password reset successfully!'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'detail': 'User does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
+        
