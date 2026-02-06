@@ -8,18 +8,17 @@ from django.core.cache import cache
 
 def sendActivationEmail(userEmail, token):
     user = User.objects.get(email=userEmail)
+    sender_email = os.environ.get("EMAIL_HOST_USER", default="videoflix@example.com")
     activation_key = str(uuid.uuid4())[:32]
     data = {'uid': user.pk, 'token': token}
     cache.set(activation_key, json.dumps(data), 900)
     site_url = os.environ.get("SITE_URL", default="http://localhost:8000")
     activation_link = f"{site_url}api/activate/{activation_key}"
-    print(cache.get(activation_key))
-
     
     send_mail(
         'Welcome to Videoflix!', # Subject
         'Thanks for signing up. Here is your activation link: ' + activation_link, # Message
-        'videoflix@example.com', # From email
+        sender_email, # From email
         [userEmail], # To email
         fail_silently=False, # Raise an error if sending fails
     )
@@ -27,6 +26,7 @@ def sendActivationEmail(userEmail, token):
 
 def sendPasswordResetEmail(userEmail):
     user = User.objects.get(email=userEmail)
+    sender_email = os.environ.get("EMAIL_HOST_USER", default="videoflix@example.com")
     reset_token = secrets.token_urlsafe(16)
     cache.set(f'password_reset_{reset_token}', user.pk, 900)  # Store user ID with token in cache
 
@@ -36,7 +36,7 @@ def sendPasswordResetEmail(userEmail):
     send_mail(
         'Videoflix Password Reset Request',
         f'Click the link to reset your password: {reset_link}',
-        'noreply@videoflix.com',
+        sender_email,
         [userEmail],
         fail_silently=False,
     )
