@@ -137,7 +137,7 @@ AUTH_PASSWORD_VALIDATORS = [
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", default="smtp.example.com")
 EMAIL_PORT = os.environ.get("EMAIL_PORT", default=587)
-EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", default=True)
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", default="example_user@example.com")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", default="example_password")
 
