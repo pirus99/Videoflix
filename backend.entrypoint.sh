@@ -38,6 +38,6 @@ else:
     print(f"Superuser '{username}' already exists.")
 EOF
 
-python manage.py rqworker default &
+python manage.py rqworker high default low &
 
 exec gunicorn core.wsgi:application --bind 0.0.0.0:8000 --reload

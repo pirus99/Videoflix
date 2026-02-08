@@ -1,4 +1,8 @@
-import secrets, json, os
+import json, django_rq
+
+from django.core.cache import cache
+from django.contrib.auth.models import User
+
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
@@ -6,11 +10,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from django.core.cache import cache
-from django.contrib.auth.models import User
-from django.core.mail import send_mail
-
-from jwt_auth_app.api.scripts import sendActivationEmail, sendPasswordResetEmail
+from .scripts import sendActivationEmail, sendPasswordResetEmail
 from .serializers import RegistrationSerializer
 
 class RegistrationView(APIView):
@@ -27,7 +27,8 @@ class RegistrationView(APIView):
             data = {
                 'deatil': 'User created successfully!'
             }
-            sendActivationEmail(saved_account.email, secrets.token_urlsafe(16))
+            queue = django_rq.get_queue('high', autocommit=True)
+            queue.enqueue(sendActivationEmail, saved_account.email)
             return Response(data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -150,7 +151,8 @@ class PasswordResetRequestView(APIView):
             return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            sendPasswordResetEmail(email)
+            q = django_rq.get_queue('high', autocommit=True)
+            q.enqueue(sendPasswordResetEmail, email)
             return Response({'detail': 'Password reset link sent to email.'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'detail': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
