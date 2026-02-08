@@ -27,7 +27,8 @@ class RegistrationView(APIView):
             data = {
                 'deatil': 'User created successfully!'
             }
-            queue = django_rq.get_queue('high', autocommit=True)
+            #sendActivationEmail(saved_account.email) #Call the function directly to send email immediately
+            queue = django_rq.get_queue('high', autocommit=True) #Use RQ to send email asynchronously in the background
             queue.enqueue(sendActivationEmail, saved_account.email)
             return Response(data)
         else:
@@ -68,6 +69,7 @@ class LogoutView(APIView):
         response.data = {
             'detail': 'Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid.'
         }
+        response.status_code = status.HTTP_200_OK
         return response
         
 class LoginView(TokenObtainPairView):
@@ -125,8 +127,8 @@ class ActivateAccountView(APIView):
     
     permission_classes = [AllowAny]
 
-    def get(self, request, activation_key):
-        cached_data = cache.get(activation_key)
+    def get(self, request, token):
+        cached_data = cache.get(token)
         if not cached_data:
             return Response({'detail': 'Activation link is invalid or has expired.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -135,7 +137,7 @@ class ActivateAccountView(APIView):
             user = User.objects.get(pk=data['uid'])
             user.is_active = True
             user.save()
-            cache.delete(activation_key)
+            cache.delete(token)
             return Response({'detail': 'Account activated successfully!'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'detail': 'User does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -151,8 +153,9 @@ class PasswordResetRequestView(APIView):
             return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            q = django_rq.get_queue('high', autocommit=True)
-            q.enqueue(sendPasswordResetEmail, email)
+            #sendPasswordResetEmail(email) #Call the function directly to send email immediately
+            queue = django_rq.get_queue('high', autocommit=True) #Use RQ to send email asynchronously in the background
+            queue.enqueue(sendPasswordResetEmail, email)
             return Response({'detail': 'Password reset link sent to email.'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({'detail': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
