@@ -40,4 +40,15 @@ EOF
 
 python manage.py rqworker high default low &
 
-exec gunicorn core.wsgi:application --bind 0.0.0.0:8000 --reload
+# Gunicorn configuration for large video uploads:
+# --timeout 600: Allow up to 10 minutes for large file uploads
+# --workers 4: Multiple workers so uploads don't block other requests
+# --graceful-timeout 300: Allow 5 minutes for graceful worker shutdown
+# --keep-alive 5: Keep connections alive for 5 seconds
+exec gunicorn core.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --reload \
+    --timeout 600 \
+    --graceful-timeout 300 \
+    --workers 4 \
+    --keep-alive 5

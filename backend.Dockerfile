@@ -11,7 +11,7 @@ COPY . .
 RUN apk update && \
     apk add --no-cache --upgrade bash && \
     apk add --no-cache postgresql-client ffmpeg && \
-    apk add --no-cache --virtual .build-deps gcc musl-dev postgresql-dev && \
+    apk add --no-cache --virtual .build-deps gcc musl-dev postgresql-dev linux-headers && \
     pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     apk del .build-deps && \
