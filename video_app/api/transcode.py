@@ -198,6 +198,7 @@ def transcode_video_segment(video_id, resolution, scale_param, segment_name, cod
 				"-c:a", audio_param,
 				"-ar", "48000",
 				"-t", "0",  # Short duration to create the init segment
+				"-f", "mp4",
 				"-fflags", "+genpts",
 				"-movflags", "+faststart+frag_keyframe+empty_moov+default_base_moof",
 				output_path  # init.mp4
@@ -252,8 +253,6 @@ def transcode_continuously(video_id, resolution, scale_param, segment_name, code
 		"-c:a", audio_param,
 		"-ar", "48000",
 		"-reset_timestamps", "0",
-		"-movflags", "+faststart+frag_keyframe+empty_moov+default_base_moof",
-		"-force_key_frames", f"expr:gte(t,n_forced*{segment_duration/2})",
 		"-f", "hls",
 		"-hls_time", str(segment_duration),
 		"-hls_playlist_type", "event",
@@ -411,7 +410,7 @@ def transcode_preview(preview_id):
             "-t", str(preview_preview_duration),
             "-vf", "scale=-2:480",
             "-c:v", "libx264", "-preset", "medium", "-b:v", "900k",
-            "-c:a", "aac", "-ar", "48000",
+            "-an",
             "-movflags", "+faststart+frag_keyframe+empty_moov+default_base_moof",
             "-f", "hls",
             "-hls_time", "5",
