@@ -16,6 +16,7 @@ from .serializers import RegistrationSerializer
 class RegistrationView(APIView):
     """API view for user registration."""
     
+    authentication_classes = []  # Disable authentication for this view
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -37,6 +38,7 @@ class RegistrationView(APIView):
 class TokenRefreshView(APIView):
     """API view to refresh JWT access token using refresh token from cookies."""
     
+    authentication_classes = []  # Disable authentication for this view
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -75,6 +77,7 @@ class LogoutView(APIView):
 class LoginView(TokenObtainPairView):
     """API view for user login with JWT token generation."""
     
+    authentication_classes = []  # Disable authentication for this view
     permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs): 
@@ -126,6 +129,7 @@ class ActivateAccountView(APIView):
     """API view to activate user account via activation link."""
     
     permission_classes = [AllowAny]
+    authentication_classes = []  # Disable authentication for this view
 
     def get(self, request, token):
         cached_data = cache.get(token)
@@ -146,6 +150,7 @@ class PasswordResetRequestView(APIView):
     """API view to obtain password reset token via email."""
     
     permission_classes = [AllowAny]
+    authentication_classes = []  # Disable authentication for this view
 
     def post(self, request):
         email = request.data.get('email')
@@ -164,6 +169,7 @@ class PasswordResetConfirmView(APIView):
     """API view to confirm password reset with token and set new password."""
     
     permission_classes = [AllowAny]
+    authentication_classes = []  # Disable authentication for this view
 
     def post(self, request, reset_token):
         cached_user_id = cache.get(f'password_reset_{reset_token}')

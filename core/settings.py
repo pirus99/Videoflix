@@ -66,6 +66,11 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = ['http://127.0.0.1:5500', 'http://localhost:5500']
 CORS_ALLOW_CREDENTIALS = True
 
+CORS_ALLOW_AUTH_HEADERS = [
+    'authorization',
+    'content-type',
+]
+
 ROOT_URLCONF = 'core.urls'
 
 TEMPLATES = [
@@ -90,6 +95,16 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': (
         'rest_framework_simplejwt.tokens.AccessToken',
     )
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'jwt_auth_app.api.authentication.CustomJWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
 }
 
 # Database
