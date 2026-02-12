@@ -118,7 +118,8 @@ class PreviewM3U8View(APIView):
         
         output_path = f"media/hls_preview/preview_{video_id}/"
         m3u8_path = os.path.join(output_path, 'index.m3u8')
-        
+        if not os.path.exists(m3u8_path):
+            return Response({"error": "Preview M3U8 playlist not found."}, status=status.HTTP_404_NOT_FOUND)
         with open(m3u8_path, 'r') as f:
             m3u8_content = f.read()
         m3u8 = m3u8_content if m3u8_content else None

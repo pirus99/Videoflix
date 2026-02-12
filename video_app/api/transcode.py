@@ -100,52 +100,59 @@ def get_keyframes(video_path):
 		return []
 
 def generate_m3u8_file(m3u8_path, video_id):
-	"""Generate the M3U8 file for Video Files with ffprobe and ffmpeg."""
-	try: 
-		# Get the directory of the M3U8 file
-		output_dir = os.path.dirname(m3u8_path)
-		if not os.path.exists(output_dir):
-			os.makedirs(output_dir)
+    """Generate the M3U8 file for Video Files with ffprobe and ffmpeg."""
+    # ensure lockfile is always defined so exception handlers can refer to it safely
+    lockfile = None
+    try: 
+        # Get the directory of the M3U8 file
+        output_dir = os.path.dirname(m3u8_path)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
-		# Extract keyframes from the original video
-		video_path = "media/" + Video.objects.get(pk=video_id).video_file.name
+        # Extract keyframes from the original video
+        video_path = "media/" + Video.objects.get(pk=video_id).video_file.name
+        
+        lockfile = os.path.join(output_dir, "lockfile.lock")
+        if not lock_a_file(lockfile):
+            return "Failed to acquire lock for M3U8 generation. Generation is already in progress."
+        
+        keyframes = get_keyframes(video_path)
+        print(f"Extracted {len(keyframes)} keyframes for video {video_id}")
 
-		lockfile = m3u8_path + "lockfile.lock"
-		if not lock_a_file(lockfile):
-			return "Failed to acquire lock for M3U8 generation. Generation is already in progress."
-		
-		keyframes = get_keyframes(video_path)
-		print(f"Extracted {len(keyframes)} keyframes for video {video_id}")
+        if not keyframes:
+            get_rid_of_lockfile(lockfile)
+            return "Error failed to extract keyframes. M3U8 generation cannot proceed."
 
-		if not keyframes:
-			get_rid_of_lockfile(lockfile)
-			return "Error failed to extract keyframes. M3U8 generation cannot proceed."
+        # Generate the M3U8 content
+        m3u8_content = "#EXTM3U\n#EXT-X-VERSION:6\n"
+        m3u8_content += "#EXT-X-MEDIA-SEQUENCE:0\n"
+        m3u8_content += "#EXT-X-MAP:URI=\"init.mp4\"\n"
+        m3u8_content += "#EXT-X-ALLOW-CACHE:YES\n"
+        m3u8_content += "#EXT-X-PLAYLIST-TYPE:EVENT\n"
+        m3u8_content += f"#EXT-X-TARGETDURATION:{int(keyframes[3]-keyframes[0])+1}\n"
+        m3u8_content += "#EXT-X-START:TIME-OFFSET=0.01,PRECISE=NO\n"
+        for i in range(int((len(keyframes) - 1) / 3) + 1):
+            duration = (keyframes[i + 1] - keyframes[i]) * 3
+            m3u8_content += "#EXT-X-DISCONTINUITY\n"
+            m3u8_content += f"#EXTINF:{duration:.3f},\nsegment_{i:03d}.mp4\n"
+        m3u8_content += "#EXT-X-ENDLIST\n"
 
-		# Generate the M3U8 content
-		m3u8_content = "#EXTM3U\n#EXT-X-VERSION:6\n"
-		m3u8_content += "#EXT-X-MEDIA-SEQUENCE:0\n"
-		m3u8_content += "#EXT-X-MAP:URI=\"init.mp4\"\n"
-		m3u8_content += "#EXT-X-ALLOW-CACHE:YES\n"
-		m3u8_content += "#EXT-X-PLAYLIST-TYPE:EVENT\n"
-		m3u8_content += f"#EXT-X-TARGETDURATION:{int(keyframes[1]-keyframes[0])*3+1}\n"
-		m3u8_content += "#EXT-X-START:TIME-OFFSET=0.01,PRECISE=NO\n"
-		for i in range(int((len(keyframes) - 1) / 3) + 1):
-			duration = (keyframes[i + 1] - keyframes[i]) * 3
-			m3u8_content += "#EXT-X-DISCONTINUITY\n"
-			m3u8_content += f"#EXTINF:{duration:.3f},\nsegment_{i:03d}.mp4\n"
-		m3u8_content += "#EXT-X-ENDLIST\n"
+        # Write the M3U8 content to the file
+        with open(m3u8_path, 'w') as f:
+            f.write(m3u8_content)
 
-		# Write the M3U8 content to the file
-		with open(m3u8_path, 'w') as f:
-			f.write(m3u8_content)
+        get_rid_of_lockfile(lockfile)
 
-		get_rid_of_lockfile(lockfile)
-
-		return m3u8_content
-	
-	except Exception as e:
-		get_rid_of_lockfile(lockfile)
-		return "Error generating M3U8 file. Details: " + str(e)
+        return m3u8_content
+    
+    except Exception as e:
+        # only try to remove lockfile if it was created/assigned
+        if lockfile:
+            try:
+                get_rid_of_lockfile(lockfile)
+            except Exception:
+                pass
+        return "Error generating M3U8 file. Details: " + str(e)
 	
 def transcode_video_segment(video_id, resolution, scale_param, segment_name, codec_param, bitrate, audio_param, segment_duration):
 	"""Transcode a single video segment using FFmpeg."""
