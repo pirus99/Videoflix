@@ -95,6 +95,10 @@ def fetch_imdb_data(imdb_id):
         genres = movie.get('genres', [])
         genre = ', '.join(genres) if genres else None
         category = genres[0] if genres else None
+        if poster is None:
+            # Try fetching poster from OMDb as a fallback
+            omdb_poster = fetch_omdb_poster(imdb_id)
+            poster = omdb_poster if omdb_poster else None
         return {
             'title': title,
             'plot': plot,
@@ -106,8 +110,11 @@ def fetch_imdb_data(imdb_id):
             'director': ', '.join([d.get('name', str(d)) for d in movie.get('directors', [])]) if movie.get('directors') else None,
             'actors': ', '.join([a.get('name', str(a)) for a in movie.get('cast', [])[:5]]) if movie.get('cast') else None,
         }
+    
     except Exception:
         raise RuntimeError('ImdbPY error: Failed to fetch data for IMDb ID ' + imdb_id)
+    
+
     
 
 def _output_dir_fs(video_id, resolution):
@@ -151,3 +158,16 @@ def wait_for_segment_completion(video_id, resolution, segment_name, timeout=30, 
 		time.sleep(0.5)
 
 	return False
+
+def fetch_omdb_poster(imdb_id):
+    url = f"http://www.omdbapi.com/?i={imdb_id}&plot=short&r=json"
+    try:
+        resp = requests.get(url, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            poster = data.get("Poster")
+            if poster and poster != "N/A":
+                return poster
+    except Exception:
+        pass
+    return None

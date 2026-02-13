@@ -4,7 +4,7 @@ from datetime import timedelta
 import django_rq
 from django_rq import enqueue
 
-from video_app.api.transcode import transcode_video_segment, transcode_continuously, generate_transcode_path
+from video_app.api.transcode import transcode_video_segment, transcode_continuously, generate_transcode_path, generate_m3u8_file
 from video_app.api.scripts import wait_for_segment_completion
 
 def kill_continuous_worker(video_id, resolution):
@@ -309,11 +309,16 @@ def video_post_upload_worker(video_id):
 			preview.save()
 
 		# Enqueue the preview transcode job
-		q = django_rq.get_queue('default')
+		q = django_rq.get_queue('low')
 		q.enqueue(transcode_preview, preview.id)
 		result['preview_created'] = created
 		result['preview_id'] = preview.id
 
+		# Enqueue M3U8 generation for the full video
+		m3u8_output_path = f"media/index/video_{video_id}/"
+		m3u8_path = os.path.join(m3u8_output_path, 'index.m3u8')
+		q.enqueue(generate_m3u8_file, m3u8_path, video_id)
+		
 	except Exception as e:
 		result['preview_error'] = str(e)
 

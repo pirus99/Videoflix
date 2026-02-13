@@ -56,7 +56,7 @@ class VideoSegmentView(APIView):
         if segment_name == 'init.mp4':
             if os.path.exists(segment_path + segment_name):
                 with open(segment_path + segment_name, 'rb') as f:
-                    response = HttpResponse(f.read(), content_type='video/mpeg4ts')
+                    response = HttpResponse(f.read(), content_type='video/mpegts')
                     response['Content-Disposition'] = f'inline; filename="{segment_name}"'
                     return response
             else:
@@ -66,7 +66,7 @@ class VideoSegmentView(APIView):
                     print(f"Waiting for {segment_name} to be transcoded...")
                     time.sleep(1)
                 with open(segment_path + segment_name, 'rb') as f:
-                    response = HttpResponse(f.read(), content_type='video/mpeg4ts')
+                    response = HttpResponse(f.read(), content_type='video/mpegts')
                     response['Content-Disposition'] = f'inline; filename="{segment_name}"'
                     return response
         
@@ -81,7 +81,7 @@ class VideoSegmentView(APIView):
         # If segment exists, serve it
         if os.path.exists(segment_path + segment_name):
                 with open(segment_path + segment_name, 'rb') as f:
-                    response = HttpResponse(f.read(), content_type='video/mpeg4ts')
+                    response = HttpResponse(f.read(), content_type='video/mpegts')
                     response['Content-Disposition'] = f'inline; filename="{segment_name}"'
                     return response
         
@@ -106,7 +106,7 @@ class VideoSegmentView(APIView):
                 print(f"Waiting for segment {segment_name} to be transcoded...")
                 time.sleep(2)
             with open(segment_path + segment_name, 'rb') as f:
-                response = HttpResponse(f.read(), content_type='video/mpeg4ts')
+                response = HttpResponse(f.read(), content_type='video/mpegts')
                 response['Content-Disposition'] = f'inline; filename="{segment_name}"'
                 return response
         return Response({"error": "Segment not found after transcoding."}, status=status.HTTP_404_NOT_FOUND)
@@ -134,7 +134,7 @@ class PreviewSegmentView(APIView):
         segment_path = os.path.join(f"media/hls_preview/preview_{video_id}/", segment_name)
         if os.path.exists(segment_path):
             with open(segment_path, 'rb') as f:
-                response = HttpResponse(f.read(), content_type='video/mpeg4ts')
+                response = HttpResponse(f.read(), content_type='video/mpegts')
                 response['Content-Disposition'] = f'inline; filename="{segment_name}"'
                 return response
         return Response({"error": "Preview segment not found."}, status=status.HTTP_404_NOT_FOUND)
