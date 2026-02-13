@@ -66,8 +66,17 @@ class LogoutView(APIView):
     
     def post(self, request):
         response = Response()
+                # Blacklist the refresh token if provided (uses SimpleJWT token blacklisting)
+        refresh_token = request.COOKIES.get('refresh_token')
+        if refresh_token:
+            try:
+                RefreshToken(refresh_token).blacklist()
+            except Exception:
+                # ignore errors during blacklisting (token may be invalid or already blacklisted)
+                pass
         response.delete_cookie('access_token', path='/', samesite='None')
         response.delete_cookie('refresh_token', path='/', samesite='None')
+
         response.data = {
             'detail': 'Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid.'
         }
