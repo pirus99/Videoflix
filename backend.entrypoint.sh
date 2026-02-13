@@ -38,7 +38,11 @@ else:
     print(f"Superuser '{username}' already exists.")
 EOF
 
-python manage.py rqworker high default low &
+    python manage.py rqworker high default low &
+    python manage.py rqworker high default low &
+    python manage.py rqworker high default low &
+    python manage.py rqworker high default low &
+    python manage.py rqworker high default low &
 
 # Gunicorn configuration for large video uploads:
 # --timeout 600: Allow up to 10 minutes for large file uploads
