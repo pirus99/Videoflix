@@ -59,14 +59,9 @@ A Netflix-style video streaming platform built with Django. Videoflix provides a
 - [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
 - An SMTP-capable email account (e.g. Gmail with an [App Password](https://support.google.com/accounts/answer/185833))
 
-For local development without Docker you will also need:
-
-- Python 3.12+
-- PostgreSQL
-- Redis
-- FFmpeg
-
 ## Getting Started
+
+The project is designed to run via **Docker Compose**, which handles all dependencies (PostgreSQL, Redis, FFmpeg) automatically.
 
 ### 1. Clone the repository
 
@@ -110,11 +105,20 @@ This will:
 
 The API will be available at `http://localhost:8000/`.
 
+To stop the services:
+
+```bash
+docker compose down
+```
+
 ### 4. Access the admin panel
 
 Navigate to `http://localhost:8000/admin/` and log in with the superuser credentials from your `.env` file.
 
-## Local Development (without Docker)
+<details>
+<summary><strong>Local Development (without Docker)</strong></summary>
+
+If you prefer to run outside of Docker, you will need Python 3.12+, PostgreSQL, Redis, and FFmpeg installed locally.
 
 ```bash
 # Create and activate a virtual environment
@@ -138,6 +142,8 @@ python manage.py rqworker high default low
 ```
 
 > **Note:** When running locally, update `DB_HOST` and `REDIS_HOST` in your `.env` to point to `localhost` instead of the Docker service names (`db` / `redis`).
+
+</details>
 
 ## API Endpoints
 
