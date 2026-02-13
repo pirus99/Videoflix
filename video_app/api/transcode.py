@@ -170,11 +170,11 @@ def transcode_video_segment(video_id, resolution, scale_param, segment_name, cod
 	try:
 		if not segment_name == 'init.mp4':
 			segment_number = int(segment_name.split('_')[1].split('.')[0])
-			start_time = str((float(segment_duration)) * segment_number)
+			start_time = str(float(segment_duration) * segment_number)
 			cmd = [
 				"ffmpeg", "-y",
 				"-ss", start_time,
-				"-to", str(segment_number * segment_duration + segment_duration - 0.01),  # Add a small offset to ensure we capture the full segment duration
+				"-to", str(float(start_time) + float(segment_duration) / 3 * 2),
 				"-i", input_path,
 				"-vf", scale_param,
 				"-c:v", codec_param,
@@ -182,10 +182,11 @@ def transcode_video_segment(video_id, resolution, scale_param, segment_name, cod
 				"-b:v", bitrate,
 				"-c:a", audio_param,
 				"-ar", "48000",
+				"-movflags", "+empty_moov+default_base_moof",
+				"-force_key_frames", f"expr:gte(t,n_forced*{segment_duration / 3})",
 				"-reset_timestamps", "0",
-				"-movflags", "+faststart+frag_keyframe+empty_moov+default_base_moof",
-				"-force_key_frames", f"expr:gte(t,n_forced*{segment_duration/2})",
-				output_path  # segment_000.m4s
+				"-fflags", "+genpts",
+				output_path  # segment_000.mp4
 			]
 		else:
 			cmd = [
@@ -203,7 +204,7 @@ def transcode_video_segment(video_id, resolution, scale_param, segment_name, cod
 				"-movflags", "+faststart+frag_keyframe+empty_moov+default_base_moof",
 				output_path  # init.mp4
 			]
-
+			
 		result = subprocess.run(
 			cmd,
 			stdout=subprocess.DEVNULL,
