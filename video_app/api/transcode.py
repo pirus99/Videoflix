@@ -536,4 +536,27 @@ def probe_a_video(path):
 		'duration_seconds': duration_seconds,
 	}
 
+def get_thumbnail_from_video(video_id):
+	video = Video.objects.get(pk=video_id)
+	input_path = video.video_file.path
+	output_dir = os.path.join("media", "index", f"video_{video_id}")
+	os.makedirs(output_dir, exist_ok=True)
+	output_path = os.path.join(output_dir, "thumbnail.jpg")
+	timestamp = video.duration / 10
 
+	cmd = [
+		"ffmpeg", "-y",
+		"-ss", str(timestamp),
+		"-i", input_path,
+		"-frames:v", "1",
+		output_path
+	]
+
+	try:
+		result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
+		if result.returncode != 0:
+			raise Exception(f"FFmpeg error: {result.stderr.strip()}")
+		return output_path
+	except Exception as e:
+		print(f"Error generating thumbnail: {str(e)}")
+		return None

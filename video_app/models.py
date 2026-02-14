@@ -57,3 +57,13 @@ class Preview(models.Model):
     class Meta:
         verbose_name = 'Preview'
         verbose_name_plural = 'Previews'
+
+class Thumbnail(models.Model):
+    """Thumbnail model for storing generated thumbnails."""
+    
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='thumbnails')
+    image = models.FileField(upload_to='media/index/video_{video_id}/thumbnails/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Thumbnail for {self.video.title} at {self.created_at}"

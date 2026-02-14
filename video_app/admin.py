@@ -36,9 +36,11 @@ def cleanup_preview_media(preview):
 	base_dir = getattr(settings, 'BASE_DIR', os.getcwd())
 	
 	preview_hls_dir = os.path.join(base_dir, 'media', 'hls_preview', f'preview_{preview.id}')
+	index_dir = os.path.join(base_dir, "media", "index", f"video_{preview.video.id}")
 	if os.path.exists(preview_hls_dir):
 		shutil.rmtree(preview_hls_dir, ignore_errors=True)
-
+	if os.path.exists(index_dir):
+		shutil.rmtree(index_dir, ignore_errors=True)
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):

@@ -4,8 +4,9 @@ from datetime import timedelta
 import django_rq
 from django_rq import enqueue
 
-from video_app.api.transcode import transcode_video_segment, transcode_continuously, generate_transcode_path, generate_m3u8_file
+from video_app.api.transcode import transcode_video_segment, transcode_continuously, generate_transcode_path, generate_m3u8_file, get_thumbnail_from_video
 from video_app.api.scripts import wait_for_segment_completion
+from video_app.models import Thumbnail
 
 def kill_continuous_worker(video_id, resolution):
 	"""Kill the continuous transcode worker for a given video/resolution."""
@@ -275,8 +276,20 @@ def video_post_upload_worker(video_id):
 		result['probe_error'] = str(e)
 		print(f"video_post_upload_worker: probe failed for video {video_id}: {result['probe_error']}")
 		return result
+	
+	# 3. Get thumbnail from video if not already set
+	if video.thumbnail_url == '' or video.thumbnail_url is None:
+			print(f"video_post_upload_worker: Generating thumbnail for video {video_id}...")
+			thumbnail_object = Thumbnail.objects.create(video=video)
+			thumbnail_object.image = get_thumbnail_from_video(video.id)
+			thumbnail_object.save()
+			site_url = os.getenv('SITE_URL', default='http://localhost:8000')
+			app_url = site_url + 'api/thumbnail/video_' + str(video.id)
+			video.poster_url = app_url + '/' + 'thumbnail.jpg'
+			video.thumbnail_url = video.poster_url
+			video.save()
 
-	# 3. Create Preview and trigger transcode
+	# 4. Create Preview and trigger transcode
 	duration_seconds = info.get('duration_seconds') or 0
 
 	# Calculate smart start offset (start at 10% of video, or 0 if short)

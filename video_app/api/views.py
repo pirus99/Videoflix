@@ -139,4 +139,20 @@ class PreviewSegmentView(APIView):
                 return response
         return Response({"error": "Preview segment not found."}, status=status.HTTP_404_NOT_FOUND)
     
+class ThumbnailView(APIView):
+    """API view to serve video thumbnails."""
+
+    permission_classes = []  # Allow public access to thumbnails
+    authentication_classes = []  # Disable authentication for thumbnail access
+
+    def get(self, request, video_id):
+        video = Video.objects.filter(id=video_id).first()
+        if video and video.thumbnail_url:
+            thumbnail_path = os.path.join(f'media/index/video_{video_id}/thumbnail.jpg')
+            if os.path.exists(thumbnail_path):
+                with open(thumbnail_path, 'rb') as f:
+                    response = HttpResponse(f.read(), content_type='image/jpeg')
+                    response['Content-Disposition'] = f'inline; filename="{os.path.basename(video.thumbnail_url)}"'
+                    return response
+        return Response({"error": "Thumbnail not found."}, status=status.HTTP_404_NOT_FOUND)
         
