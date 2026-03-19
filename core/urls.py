@@ -19,7 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('django-rq/', include('django_rq.urls')),
+    path('admin/django-rq/', include('django_rq.urls')),
     path('api/', include('jwt_auth_app.api.urls')),
     path('static/', include('django.contrib.staticfiles.urls')),
     path('api/', include('video_app.api.urls')),
